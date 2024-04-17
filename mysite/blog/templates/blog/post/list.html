@@ -1,6 +1,6 @@
 {% extends "blog/base.html" %}
 
-{% block title %}My Blog{% endblock %}
+{% block title %}Mój blog{% endblock %}
 
 {% block content %}
   <h1>My Blog</h1>
@@ -11,8 +11,9 @@
       </a>
     </h2>
     <p class="date">
-      Published {{ post.publish }} by {{ post.author }}
+      Opublikowany {{ post.publish }} przez {{ post.author }}
     </p>
     {{ post.body|truncatewords:30|linebreaks }}
   {% endfor %}
+  {% include "pagination.html" with page=page_obj %}
 {% endblock %}
