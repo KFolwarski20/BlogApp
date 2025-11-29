@@ -1,7 +1,9 @@
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.core.mail import send_mail
 from django.views.generic import ListView
 from .models import Post
+from .forms import EmailPostForm
 
 
 class PostListView(ListView):
@@ -18,12 +20,12 @@ def post_list(request):
     try:
         posts = paginator.page(page)
     except PageNotAnInteger:
-    # Jeżeli zmienna page nie jest liczbą całkowitą
-    # wówczas pobierana jest pierwsza strona wyników.
+        # Jeżeli zmienna page nie jest liczbą całkowitą
+        # wówczas pobierana jest pierwsza strona wyników.
         posts = paginator.page(1)
     except EmptyPage:
-    # Jeżeli zmienna page ma wartość większą niż numer ostatniej strony
-    # wyników, wtedy pobierana jest ostatnia strona wyników.
+        # Jeżeli zmienna page ma wartość większą niż numer ostatniej strony
+        # wyników, wtedy pobierana jest ostatnia strona wyników.
         posts = paginator.page(paginator.num_pages)
     return render(request, 'blog/post/list.html', {'posts': posts})
 
@@ -37,3 +39,25 @@ def post_detail(request, year, month, day, post):
     return render(request,
                   'blog/post/detail.html',
                   {'post': post})
+
+
+def post_share(request, post_id):
+    # Pobieranie posta na podstawie jego identyfikatora
+    post = get_object_or_404(Post, id=post_id, status='published')
+    sent = False
+
+    if request.method == 'POST':
+        # Formularz został wysłany
+        form = EmailPostForm(request.POST)
+        if form.is_valid():
+            # Weryfikacja formularza zakończyła się powodzeniem...
+            cd = form.cleaned_data
+            post_url = request.build_absolute_uri(post.get_absolute_url())
+            subject = f"{cd['name']} zachęca {cd['email']} do przeczytania \"{post.title}\"."
+            message = (f"Przeczytaj post \"{post.title}\" na stronie {post_url}\n\n Komentarz dodany przez:"
+                       f"{cd['name']}: {cd['comments']}")
+            send_mail(subject, message, 'test@dev.com', [cd['to']])
+            sent = True
+    else:
+        form = EmailPostForm()
+    return render(request, 'blog/post/share.html', {'post': post, 'form': form, 'sent': sent})
